@@ -19,7 +19,7 @@ async function initializeDatabase(req, res) {
     }
 }
 
-async function listTransactions(req, res) {
+const listTransactions = async (req, res) => {
     try {
         const { page = 1, perPage = 10, search = '', month } = req.query;
         const query = {};
@@ -33,7 +33,9 @@ async function listTransactions(req, res) {
         }
 
         if (month) {
-            query.dateOfSale = { $regex: `-${month}-` };
+            query.$expr = {
+                $eq: [{ $month: "$dateOfSale" }, parseInt(month)]
+            };
         }
 
         const transactions = await Transaction.find(query)
@@ -51,15 +53,18 @@ async function listTransactions(req, res) {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
+};
 
-async function getStatistics(req, res) {
+
+const getStatistics = async (req, res) => {
     try {
         const { month } = req.query;
         const query = {};
 
         if (month) {
-            query.dateOfSale = { $regex: `-${month}-` };
+            query.$expr = {
+                $eq: [{ $month: "$dateOfSale" }, parseInt(month)]
+            };
         }
 
         const transactions = await Transaction.find(query);
@@ -76,15 +81,18 @@ async function getStatistics(req, res) {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
+};
 
-async function getBarChart(req, res) {
+
+const getBarChart = async (req, res) => {
     try {
         const { month } = req.query;
         const query = {};
 
         if (month) {
-            query.dateOfSale = { $regex: `-${month}-` };
+            query.$expr = {
+                $eq: [{ $month: "$dateOfSale" }, parseInt(month)]
+            };
         }
 
         const transactions = await Transaction.find(query);
@@ -113,15 +121,18 @@ async function getBarChart(req, res) {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
+};
 
-async function getPieChart(req, res) {
+
+const getPieChart = async (req, res) => {
     try {
         const { month } = req.query;
         const query = {};
 
         if (month) {
-            query.dateOfSale = { $regex: `-${month}-` };
+            query.$expr = {
+                $eq: [{ $month: "$dateOfSale" }, parseInt(month)]
+            };
         }
 
         const transactions = await Transaction.find(query);
@@ -135,59 +146,28 @@ async function getPieChart(req, res) {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
-
-
-const getCombinedData = async (req, res) => {
-    const { month } = req.query;
-
-    const filter = {};
-    if (month) {
-        const start = new Date(Date.UTC(2021, month - 1, 1));
-        const end = new Date(Date.UTC(2021, month, 0, 23, 59, 59));
-        filter.dateOfSale = { $gte: start, $lte: end };
-    }
-
-    try {
-        const transactions = await Transaction.find(filter);
-
-        // Statistics
-        const totalSaleAmount = transactions.reduce((sum, t) => t.sold ? sum + t.price : sum, 0);
-        const totalSoldItems = transactions.filter(t => t.sold).length;
-        const totalNotSoldItems = transactions.filter(t => !t.sold).length;
-
-        // Bar Chart Data
-        const priceRanges = [
-            { range: '0-100', count: 0 },
-            { range: '101-200', count: 0 },
-            // ... define other ranges ...
-        ];
-
-        transactions.forEach(transaction => {
-            const price = transaction.price;
-            if (price <= 100) priceRanges[0].count++;
-            else if (price <= 200) priceRanges[1].count++;
-            // ... update counts for other ranges ...
-        });
-
-        // Pie Chart Data
-        const categoryCounts = transactions.reduce((acc, t) => {
-            acc[t.category] = (acc[t.category] || 0) + 1;
-            return acc;
-        }, {});
-
-        // Send the combined data as a single response
-        res.json({
-            statistics: { totalSaleAmount, totalSoldItems, totalNotSoldItems },
-            barChart: priceRanges,
-            pieChart: categoryCounts
-        });
-
-    } catch (error) {
-        console.error('Error fetching combined data:', error);
-        res.status(500).json({ error: 'Failed to fetch combined data' });
-    }
 };
+
+
+async function getCombinedData(req, res) {
+    try {
+        const { month } = req.query;
+
+        const [statistics, barChart, pieChart] = await Promise.all([
+            getStatistics(req, res),
+            getBarChart(req, res),
+            getPieChart(req, res)
+        ]);
+
+        res.status(200).json({
+            statistics,
+            barChart,
+            pieChart,
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 
 module.exports = {
     initializeDatabase,
