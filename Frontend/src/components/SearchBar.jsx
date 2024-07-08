@@ -6,6 +6,7 @@ const SearchBar = ({ setSearch }) => {
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
         setSearch(e.target.value);
+        console.log('Search term:',    e.target.value); 
     };
 
     const clearSearch = () => {

@@ -9,7 +9,7 @@ const TransactionDashboard = () => {
     const [search, setSearch] = useState('');
     const [month, setMonth] = useState('03'); // Default to March
     const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(10);
+    const [perPage, setPerPage] = useState(2);
 
     const fetchTransactions = async () => {
         try {
@@ -29,7 +29,7 @@ const TransactionDashboard = () => {
 
     useEffect(() => {
         fetchTransactions();
-    }, [search, month, page]);
+    }, [search, month, page,perPage]);
 
     return (
         <div className="p-6">
@@ -61,7 +61,7 @@ const TransactionDashboard = () => {
                     onChange={(e) => setPerPage(parseInt(e.target.value))}
                     className="border rounded px-2 py-1"
                 >
-                    {[10, 20, 30, 40, 50].map(num => (
+                    {[2, 5, 10, 15, 20].map(num => (
                         <option key={num} value={num}>{num}</option>
                     ))}
                 </select>
